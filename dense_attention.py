@@ -7,29 +7,40 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import sys
 from keras.utils import plot_model
+from attention_layer import Attention
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 #All this for reproducibility
-
 np.random.seed(1)
 rn.seed(1)
 tf.set_random_seed(1)
 session_conf = tf.ConfigProto(intra_op_parallelism_threads=1,inter_op_parallelism_threads=1)
 sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 keras.backend.set_session(sess)
-# Build the corpus and sequences
 
 args = sys.argv
 if (len(args) < 3):
-    logger.critical ("Need 2 args... attention:'yes'/'no' & objective:'colors'/'animals'  Exiting")
+    logger.critical ("Need 3 args... attention:'yes'/'no' & objective:'colors'/'animals' & mask: 'yes'/'no'  Exiting")
     sys.exit(0)
 else:
     attention = args[1]
     objective = args[2]
+    mask = args[3]
+    if (mask == "yes"):
+        mask_zero = True
+    elif (mask == "no"):
+        mask_zero = False
 
 f = open ("./data/data.json",'r')
 dataIn = json.loads(f.read())
 f.close()
 X, labels_color, labels_animal, colorNames, animalNames, sequenceLength = dataIn['X'], np.array(dataIn['labels_color']), np.array(dataIn['labels_animal']), dataIn['colorNames'], dataIn['animalNames'], dataIn['sequenceLength']
+
+if mask_zero:
+    newX = []
+    for doc in X:
+        Xsmall = [word for word in doc if word != 'zzzzz']
+        newX.append(Xsmall)
+    X = newX.copy()
 
 if (objective == 'colors'):
     names = colorNames
@@ -42,7 +53,6 @@ wordVectorLength = 128
 denseUnits = 64
 N_a = 100
 epochs = 200
-mask_zero = False
 
 # get encoded & padded documents
 kTokenizer = keras.preprocessing.text.Tokenizer()
@@ -51,11 +61,9 @@ encoded_docs = kTokenizer.texts_to_sequences(X)
 index_word = {value: key for key, value in kTokenizer.word_index.items()}
 if mask_zero:
     Xencoded = keras.preprocessing.sequence.pad_sequences(encoded_docs, maxlen=sequenceLength, padding='post')
-    index_word[0] = 'pad'
 else:
     Xencoded = np.array([np.array(xi) for xi in kTokenizer.texts_to_sequences(X)])
 print ('Vocab:', len(index_word), 'Xencoded:', Xencoded.shape, 'Labels:', labels.shape)
-#print (index_word)
 
 def applyAttention (wordVectorRowsInSentence):   # [*, N_s, N_f] N_f = wordVector size
     N_f = wordVectorRowsInSentence.shape[-1]
@@ -73,18 +81,24 @@ def getModel():
     listOfWords = keras.layers.Input((sequenceLength,), dtype="int32")
     embed = keras.layers.Embedding(input_dim=len(kTokenizer.word_index)+1, output_dim=wordVectorLength, input_length=sequenceLength, trainable=True,mask_zero=mask_zero)(listOfWords)
     if (attention == 'yes'):
-        vectorsForPrediction = applyAttention(embed)
+        if mask_zero:
+            print ('Mask Zero:' , mask_zero, ' : Using the custom Attention Layer from Christos Baziotis') 
+            vectorsForPrediction, attention_vectors = Attention(return_attention=True, name='attention_vector_layer')(embed)
+        else:
+            print ('Mask Zero:' , mask_zero, ' : Using the function described here with repeat & permute blocks...')
+            vectorsForPrediction = applyAttention(embed)
     elif (attention == 'no'):
         countDocVector = keras.layers.Lambda(lambda x: keras.backend.sum(x, axis=1), output_shape=lambda s: (s[0], s[2]))(embed)
         vectorsForPrediction = keras.layers.Dense(units=denseUnits, activation='relu')(countDocVector)
-    predictions = keras.layers.Dense(len(names), activation='sigmoid')(vectorsForPrediction)
+    predictions = keras.layers.Dense(len(names), activation='sigmoid',use_bias=False)(vectorsForPrediction)
     model = keras.models.Model(inputs=listOfWords, outputs=predictions)
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['categorical_accuracy'])
     print(model.summary())
-    plot_model(model, show_shapes=True, to_file='results/' + attention + '.png')
-    attention_layer_model = None
+    plot_model(model, show_shapes=True, to_file='results/' + attention + '-' + mask + '.png')
     if (attention == 'yes'):
         attention_layer_model = keras.models.Model(inputs=model.input, outputs=model.get_layer('attention_vector_layer').output)
+    else:
+        attention_layer_model = None
     return model, attention_layer_model
 
 # Train/Valid/Test Split
@@ -103,8 +117,10 @@ history = model.fit(x=train_x_1, y=train_labels_1, epochs=epochs, batch_size=64,
 result['history'] = history.history
 result['test_loss'], result['test_accuracy'] = model.evaluate(test_x, test_labels, verbose=2)
 predicted = model.predict(test_x, verbose=2)
-if (attention == 'yes'):
+if (attention == 'yes' and not mask_zero):
     attention_vectors = attention_layer_model.predict(test_x, verbose=2)
+if (attention == 'yes' and mask_zero):
+    tmp, attention_vectors = attention_layer_model.predict(test_x, verbose=2)
 
 print ('Testing the predictions:')
 
@@ -113,7 +129,7 @@ names = np.array(names)
 totalError = np.zeros_like(test_labels[0])
 for j, sample in enumerate(test_x):
     predResult = {}
-    sentence = [index_word[k] for k in sample]
+    sentence = [index_word[k] for k in sample if k > 0]
     if (attention == 'yes'):
         predResult['attentionWeights'] = attention_vectors[j].tolist()
     actualIndices = np.where(test_labels[j] > 0)[0]
@@ -141,10 +157,10 @@ print ('TotalError/Sum:', totalError,np.sum(totalError))
 result['totalError'] = totalError.tolist()
 result['totalErrorSum'] = int(np.sum(totalError))
 
-np.set_printoptions()
-
-f = open ('results/' + attention + '-' + objective + '.json','w')
+f = open ('results/' + attention + '-' + objective + '-' + mask + '.json','w')
 out = json.dumps(result, ensure_ascii=True)
 f.write(out)
 f.close()
+
+np.set_printoptions()
 

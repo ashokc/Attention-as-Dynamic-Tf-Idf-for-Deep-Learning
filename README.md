@@ -4,13 +4,11 @@ This is the source code to go along with the blog article
 
 [Attention as Adaptive Tf-Idf for Deep Learning]()
 
-This repository has an implementation of Bahdanau Attention in Keras.
-
-It is applied in the context of a multi-class, multi-label classification of a set of synthetic documents. The purpose is to illustrate the effectiveness of attention and how it dynamically identifies the influential words responsible for the particular classification objective in consideration.
+Bahdanau Attention is applied in the context of a multi-class, multi-label classification of a set of synthetic documents. The purpose is to illustrate the effectiveness of attention and how it dynamically identifies the influential words responsible for the particular classification objective in consideration.
 
 ![Implementing Attention in Keras](./images/bahdanau_attention.jpg "Bahdanau Attenton in Keras")
 
-*Figure 1. A Keras implementation of Bahdanau attention in Equations 1 & 2  Takes an array of word-vectors representing a sentence and yields an attention weighted sentence vector in Rquation 2 that can be classified by whatever objective.*
+*Figure 1. A Keras implementation of attention with functional API when masking is not used. Takes an array of word-vectors representing a sentence and yields an attention weighted sentence vector that can be used for whatever classification objective. All sentences have the same number (includig the dummy words) of words without masking.*
 
 ##	Summary
 
@@ -18,7 +16,7 @@ Attention is like tf-idf for deep learning. Both attention and tf-idf boost the 
 
 ![Data Flow in Keras](./images/attention_keras.jpg "Data flow in Keras")
 
-Figure 2. Data flow with and without attention. Without attention means all words are given the weight in forming the sentence vector.
+*Figure 2. Data flow with & without attention, and with & without masking.*
 
 ## Dependencies
 
@@ -53,15 +51,15 @@ Pick a sentence from the test array to see how we performed for that sentence
 
 # Sample Results
 
-Attention weights obtained for a sentence
+##	Attention weights obtained for a sentence
 
 ![Attention Weights](./images/attention_weights.jpg "Attenton Weights")
 
 *Figure 3. Attention mechanism identifies the right words controlling the classification objective and obtains larger weights for those words. Thus the weights for the same words are different when the classification objective changes. This is unlike tf-idf  weighting that is independent of the NLP task.*
 
-Predictions for the same sentence above
+##	Predictions for the same sentence
 
 ![Predictions](./images/predictions.jpg "Predictions")
 
-*Figure 4. The larger weights for the words controlling classification allow for exact classification when attention is in place. Extra & missing classes without attention.*
+*Figure 4. The larger weights for the words controlling classification allow for exact classification when attention is in place.. Masking does not make any difference for this simple problem. But without attention the predictions have extra & missing classes.*
 

@@ -2,7 +2,7 @@
 
 This is the source code to go along with the blog article
 
-[Attention as Adaptive Tf-Idf for Deep Learning]()
+[Attention as Adaptive Tf-Idf for Deep Learning](http://xplordat.com/2019/)
 
 Bahdanau Attention is applied in the context of a multi-class, multi-label classification of a set of synthetic documents. The purpose is to illustrate the effectiveness of attention and how it dynamically identifies the influential words responsible for the particular classification objective in consideration.
 
@@ -16,7 +16,7 @@ Attention is like tf-idf for deep learning. Both attention and tf-idf boost the 
 
 ![Data Flow in Keras](./images/attention_keras.jpg "Data flow in Keras")
 
-*Figure 2. Data flow with & without attention, and with & without masking.*
+*Figure 2. Data flow with & without attention, and with & without masking. Attention layer from [Christos Baziotis](https://gist.github.com/cbaziotis/6428df359af27d58078ca5ed9792bd6d) is used when masking is in place.*
 
 ## Dependencies
 

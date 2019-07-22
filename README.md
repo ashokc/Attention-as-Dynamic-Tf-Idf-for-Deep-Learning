@@ -2,7 +2,7 @@
 
 This is the source code to go along with the blog article
 
-[Attention as Adaptive Tf-Idf for Deep Learning](http://xplordat.com/2019/)
+[Attention as Adaptive Tf-Idf for Deep Learning](http://xplordat.com/2019/07/22/attention-as-adaptive-tf-idf-for-deep-learning/)
 
 Bahdanau Attention is applied in the context of a multi-class, multi-label classification of a set of synthetic documents. The purpose is to illustrate the effectiveness of attention and how it dynamically identifies the influential words responsible for the particular classification objective in consideration.
 

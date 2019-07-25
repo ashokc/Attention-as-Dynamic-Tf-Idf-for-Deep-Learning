@@ -38,10 +38,7 @@ Attention is like tf-idf for deep learning. Both attention and tf-idf boost the 
 
 	mkdir results
 
-	./run.sh no colors		# Classify by color reference without applying attention
-	./run.sh no animals		# Classify by animal reference without applying attention
-	./run.sh yes colors		# Classify by color reference with attention
-	./run.sh yes animals	# Classify by animal reference with attention
+	./run.sh
 
 ##	Plot results
 
